@@ -1,0 +1,62 @@
+swapNodeWithClipboard Dev Notes
+===============================
+
+Nomentclature
+-------------
+pastePos:		The position at which the Witty clipboard will be pasted. It is the position preceding first character of activeTag.
+activeTag: 		The tag whose children will be replaced by the clipboard. activeTag is the tag in the line containing the cursor.
+curPos:		The position of the cursor when the extension is called. 
+tagList:		List of supported tags, including IMG.
+openTags:		Array containing the HTML opening tags supported. For now, these will only be the tags output by the Witty clipboard.
+closeTags:		Array containing the HTML closing tags supported.
+imgTag:		Variable containing the img tag, which is processed separately because it is the terminal node and has no closing tag.
+topLineText:		The complete line of text in which the cursor or selection is contained.
+isMultiLine:		Flag indicating that the selection extends over more than one line.
+isNoTag:		Flag indicating that the selection does not contain a tag in tagList.
+
+
+
+
+1) Locate pastePos
+------------------
+First, we have to identify the position at which the clipboard will be pasted. This is the actual first character position of the tag
+
+
+
+
+
+
+    1) Identify the current line
+      * Is it a cursor or a selection?
+      if (isCursor) {
+        return curPos
+      } else {
+        if ( isMultiLine) {
+          handleError
+        } else {
+          return startPos
+        }
+      }
+
+    2) With current line
+      * Is there a tag?
+      if (hasTag) {
+        get tagName
+        get startRangePos (i.e. character 0 of the line of curPos)
+
+      } else {
+        handleError
+      }
+
+    3) LOOP
+        extend Range by line incrementally
+        tagCount = occurrences of tag name before first occurrence of closeTag
+
+    4) Starting at current line
+      loop through occurrences of tagName until tagCount
+      when tagCount is reached, get endPosition
+    
+    5) set Range from startPosition to endPosition
+    6) Paste clipboard
+
+    */
