@@ -110,16 +110,33 @@ function activate(context) {
 
       // const clip = vscode.env.clipboard.readText();
       // console.log('clip :>> ' + clip);
+      var start = editor.selection.active;
+      // Paste from clipboard
+      vscode.commands.executeCommand('editor.action.clipboardPasteAction').then(function () {
 
-      vscode.env.clipboard.readText().then(function( systemClipboard) {
+        var end = editor.selection.active; // Get position after paste
+        var selection = new vscode.Selection(start.line, start.character, end.line, end.character); // Create selection
+        editor.selection = selection; // Apply selection to editor
+        
+        // Format selection, when text is selected, that text is the only thing that will be formatted
+        vscode.commands.executeCommand('editor.action.format').then(function () {
+            // This is where I really would like the deselection to happen but it runs before
+            // formatting is done, I've tried window.onDidChangeTextEditorSelection, but that doesn't
+            // seem to work how I would like it to eighther.
+            // Until issue #1775 is solved I just use a timeout. 
 
-        editor.edit(function (editBuilder) {
-          editBuilder.replace(overpasteRange, systemClipboard);
-          console.log('success');
-          });
-      }, function(err) {
-        console.log('error');
-      });
+            setTimeout(function () {
+                // Hopefully the format command is done when this happens
+                var line = editor.selection.end.line;
+                var character = editor.selection.end.character;
+                // Set both start and end of selection to the same point so that nothing is selected
+                var newSelection = new vscode.Selection(line, character, line, character); // Create selection
+                editor.selection = newSelection; // Apply selection to editor
+            }, 100);
+
+        });
+
+          });   
 
 
       // editor.edit(function (editBuilder) {
