@@ -25,7 +25,7 @@ function activate(context) {
     // !VA overPasteNode code
     // !VA --------------------------
     let pastePos, activeTag, curPos, tagList, openTags, closeTags, imgTag, topLineText;
-    let s, e, hasValidTag, curTags = [];
+    let s, e, isMultiLine, isNoTag;
     tagList = [ '<table ', '<td ', '<a ', '<img ' ];
     openTags = [ '<table ', '<td ', '<a ' ];
     closeTags = [ '</table>', '</td>', '</a>'] 
@@ -40,15 +40,18 @@ function activate(context) {
     
     // !VA Declare the selection and assign it
     const selection = editor.selection;
-    // !VA Detect cursor or selection
-    // if (editor.selection.isEmpty) { 
-    //   console.log('ERROR: No selection, just cursor');
-    // } else {
-    //   console.log('Selection');
-    // }
+    console.log('selection :>> ');
+    console.log(selection);
+    
+    if (editor.selection.isEmpty) { 
+      console.log('ERROR: No selection, just cursor');
+    } else {
+      console.log('Selection');
+    }
+
 
     // !VA Get the cursor position if there is no selection and return it as
-    function currentLine() {
+    function getCurrentLine() {
       const position = editor.selection.active;
       s = selection.start;
       e = selection.end;
@@ -60,100 +63,42 @@ function activate(context) {
         } else {
       }
       curPos = s;
+
       const document = editor.document; 
       var endChar = document.lineAt(curPos).range.end.character;
-      const lineStart = new vscode.Position( curPos.line, 0);
-      const lineEnd = new vscode.Position(curPos.line, endChar);
-      const curLine = editor.document.getText(new vscode.Range( lineStart, lineEnd ));
-      return curLine;
-    }
-    const curLine = currentLine();
+      console.log('endChar :>> ' + endChar);
+      const lineStartPos = new vscode.Position( curPos.line, 0);
+      const lineEndPos = new vscode.Position(curPos.line, endChar);
+      const curLineRange = new vscode.Range( lineStartPos, lineEndPos );
+      const curLine = editor.document.getText(new vscode.Range( lineStartPos, lineEndPos ));
+      console.log('curLine :>> ' + curLine);
 
-    // !VA If current line does not include a tag in tagList, return out
-    function validTag(curLine) {
-      // !VA Test if the current line 
-      for (const tag of tagList) {
-        if (curLine.includes(tag)) {
-          hasValidTag = true;
-          break;
-        } else {
-          hasValidTag = false;
-        }
-      }
-      return hasValidTag;
+
     }
+    curPos = getCurrentLine();
+
+
+
+
+
+
+    // var endPos = curLineStart.with({ line: 1, character: 15 });
+
+    // console.log('endPos :>> ');
+    // console.log(endPos);
+
+
+    // console.log('curPos :>> ' + curPos);
+    // console.log(curPos);
+    // console.log(`curPos.line is: ${curPos.line}; curPos.character is ${curPos.character}`);
+
+    // !VA Now determine if the current line has a tag in tagList
+
+
+
+
+
     
-    hasValidTag = validTag(curLine);
-
-
-
-    // !VA Paste position is the first character position, leaving leading spaces, i.e. indents
-    // const overpasteStart, overpasteEnd;
-    function overpasteSelection(tag, curLine) {
-      console.log('overpasteSelection running');  
-      const position = editor.selection.active;
-      s = selection.start;
-      e = selection.end;
-      // console.log('tag :>> ' + tag);
-      // console.log('curLine :>> ' + curLine);
-      const overpasteStart = curLine.indexOf( tag );
-      const overpasteEnd = curLine.length;
-      console.log('overpasteStart :>> ' + overpasteStart);
-      console.log('overpasteEnd :>> ' + overpasteEnd);
-      const overpasteStartPosition = new vscode.Position( s.line, overpasteStart);
-      const overpasteEndPosition = new vscode.Position( s.line, overpasteEnd);
-      const overpasteRange = new vscode.Range( overpasteStartPosition, overpasteEndPosition);
-      console.log('overpasteRange :>> ');
-      console.log(overpasteRange);
-      console.log('HERE');
-
-
-      editor.edit(function (editBuilder) {
-        editBuilder.replace(overpasteRange, 'asdfasdfasdfasdfasdfasdfasdfd');
-    });
-
-
-
-
-    }
-
-    if (hasValidTag) {
-      // !VA Get which tags are in the current line
-      for (const tag of tagList) {
-        if (curLine.includes( tag )) {
-          curTags.push(tag);
-        }
-      }
-      if ( curTags[0] === '<img ') {
-        // !VA Handle the img tag
-        console.log('IMG tag is the parent node');
-        overpasteSelection( curTags[0], curLine);
-
-
-
-
-        
-      } else {
-        // !VA The img tag is not the parent node.
-        console.log('IMG tag not parent');
-      }
-
-
-    } else {
-      console.log('ERROR: invalid tag');
-      return;
-    }
-
-
-
-
-
-
-
-
-    // pastePosition(curLine);
-
-
 
 
 

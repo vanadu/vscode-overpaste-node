@@ -1,6 +1,6 @@
 {
-	"name": "swapnodewithclipboard",
-	"displayName": "swapNodeWithClipboard",
+	"name": "overpaste-node",
+	"displayName": "overpasteNode",
 	"description": "Swap a node and children with clipboard contents",
 	"version": "0.0.1",
 	"engines": {
@@ -10,14 +10,14 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:swapnodewithclipboard.swapnode"
+		"onCommand:overpasteNode.overpaste-node"
 	],
 	"main": "./extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "swapnodewithclipboard.swapnode",
-				"title": "Hello World"
+				"command": "overpasteNode.overpaste-node",
+				"title": "Overpaste node with clipboard"
 			}
 		]
 	},
