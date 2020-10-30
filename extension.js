@@ -158,8 +158,7 @@ function activate(context) {
           console.log('currentText :>> ');
           console.log(currentText);
           console.log('here');
-          var curSelection = new vscode.Selection( s.line, 0, (s.line + lineCounter), curEndChar);
-          editor.selection = curSelection;
+
           console.log('currentText :>> ');
           console.log(currentText);
           
@@ -170,6 +169,8 @@ function activate(context) {
         }
 
       }
+      var curSelection = new vscode.Selection( s.line, 0, (s.line + lineCounter), curEndChar);
+      editor.selection = curSelection;
       // overpasteSelection();
     }
  
