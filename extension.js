@@ -18,16 +18,15 @@ function activate(context) {
 	// Now provide the implementation of the command with  registerCommand
 	// The commandId parameter must match the command field in package.json
 	let disposable = vscode.commands.registerCommand('overpasteNode.overpaste-node', function () {
-
     console.log('Running overpasteNode');
     // The code you place here will be executed every time your command is executed
     vscode.window.showInformationMessage("overpasteNode updated...")
     // !VA overPasteNode code
     // !VA --------------------------
-    let pastePos, activeTag, curPos, tagList, openTags, closeTags, imgTag, topLineText;
+    let curPos, tagList, openTags, closeTags, imgTag, topLineText;
     let s, e, hasValidTag, curTags = [];
-    tagList = [ '<table ', '<td ', '<a ', '<img ' ];
-    openTags = [ '<table ', '<td ', '<a ' ];
+    tagList = [ '<table', '<td', '<a', '<img' ];
+    openTags = [ '<table', '<td', '<a' ];
     closeTags = [ '</table>', '</td>', '</a>'] 
 
     // !VA Declare the editor and assign it
@@ -37,7 +36,7 @@ function activate(context) {
       vscode.window.showInformationMessage("editor does not exist");
       return;
     }
-    
+
     // !VA Declare the selection and assign it. 
     const selection = editor.selection;
     const position = editor.selection.active;
@@ -49,7 +48,7 @@ function activate(context) {
     // } else {
     //   console.log('Selection');
     // }
-
+    
     // !VA Get the cursor position if there is no selection and return it as
     function currentLine() {
       // const position = editor.selection.active;
@@ -75,7 +74,7 @@ function activate(context) {
       return curLine;
     }
     const curLine = currentLine();
-
+    
     // !VA If current line does not include a tag in tagList, return out
     function validTag(curLine) {
       // !VA Test if the current line 
@@ -85,6 +84,7 @@ function activate(context) {
           break;
         } else {
           hasValidTag = false;
+          // return;
         }
       }
       return hasValidTag;
@@ -92,102 +92,98 @@ function activate(context) {
     
     hasValidTag = validTag(curLine);
 
-
-
     // !VA Paste position is the first character position, leaving leading spaces, i.e. indents
-    // const overpasteStart, overpasteEnd;
+    // const overpasteStart, overpasteEnd;`
     function selectImgNode(tag, curLine) {
-      console.log('overpasteSelection running');  
+      console.log('selectImgNode running'); 
+      console.log('tag :>> ' + tag); 
       const overpasteSelection = new vscode.Selection( 
         new vscode.Position( s.line, 0),
         new vscode.Position( s.line, curLine.length));
       editor.selection = overpasteSelection;
       return;
-
     }
 
-    function getText(startLine, startChar, endLine, endChar) {
-      // console.log('getText running'); 
+    // !VA Create a range from 4 position parameters and return the Range text.
+    function getCurText(startLine, startChar, endLine, endChar) {
+      // console.log('getCurText running'); 
       let curText;
-
-
       const startPos = new vscode.Position( startLine, startChar);
-      const endPos = new vscode.Position( endLine, endChar )
-
-      curText = editor.document.getText( new vscode.Range( startPos, endPos ))
-
-
-
-
+      const endPos = new vscode.Position( endLine, endChar );
+      curText = editor.document.getText( new vscode.Range( startPos, endPos ));
+      console.log('curText :>> ');
+      console.log(curText);
       return curText;
     }
 
-    function selectParentNode( curTags ) {
+    function selectParentNode( curTag ) {
       console.log('selectParentNode running'); 
+      let startLine, startChar, endLine, endChar, openTag, closeTag;
+      // !VA openTag and closeTag are the current tag in the selected line i.e. the line containing the cursor
       console.log('curTags :>> ');
       console.log(curTags);
-
-      
-      
-      let curText, startLine, startChar, endLine, endChar, openTag, closeTag, allText; 
-      openTag = openTags[0];
-      closeTag = closeTags[0];
-      startLine = s.line;
-      startChar = 0;
-      endLine = s.line;
-      const document = editor.document; 
-      for (let i = 0; i < 7; i++) {
-        endLine = endLine + 1;
-
-        endChar = document.lineAt(new vscode.Position( endLine, startChar)).range.end.character;
-        curText = getText( startLine, startChar, endLine, endChar);
-
-
-        if (curText.includes( closeTag )) {
-          console.log('curText :>> ' + curText);
-          console.log('HIT');
-          break;
-
-        }
+      for (let i = 0; i < openTags.length; i++) {
+        console.log('openTags[i] is: ' +  openTags[i]);
+        if ( openTags[i].includes( curTag)) {
+          openTag = openTags[i];
+          closeTag = closeTags[i];
+        } 
       }
-      console.log('curText :>> ');
-      console.log(curText);
+      console.log('openTag :>> ' + openTag);
+      console.log('closeTag :>> ' + closeTag);
+      var curEndChar, curLineText;
+      var openTagCount, closeTagCount;
+      // !VA Get the current document in the active editor
+      const document = editor.document; 
+      // !VA Counter to increment line number s.line where s.line is the line containing the cursor, i.e. the first position of the current user selection.
+      var lineCounter = -1;
+      // !VA Start with the line containing the cursor as the current range. At this point there is only one opening tag in the current range and no closing tags so start the loop accordingly.
+      openTagCount = 1, closeTagCount = 0;
+      // !VA Run the loop as long as the number of openTags does not equal the number of closeTags. Once that condition is met, exit the loop. NOTE: This will extend the 
 
-      // while (condition) {
-        // code block to be executed
-      // }
-      // var count = (temp.match(/is/g) || []).length;
-      
-      // sel = new vscode.Selection( startPos, endPos);
-      // editor.selection = sel;
+      while ( openTagCount !== closeTagCount ) {  
+        lineCounter = lineCounter + 1;
+        curEndChar = document.lineAt(new vscode.Position( s.line + lineCounter, 0)).range.end.character;
+        curLineText = ( '\n' + getCurText( s.line + lineCounter, 0, s.line + lineCounter, curEndChar));
+        console.log('curLineText :>> ');
+        console.log(curLineText);
+        console.log('openTag :>> ' + openTag);
+        console.log('closeTag :>> ' + closeTag);
 
 
+        console.log('curLineText.includes(closeTag) :>> ' + curLineText.includes(closeTag));
+        if ( curLineText.includes(closeTag)) {
+          console.log('IF CLAUSE');
+          var currentText = getCurText(s.line, 0, (s.line + lineCounter), curEndChar);
+          console.log('currentText :>> ');
+          console.log(currentText);
+          console.log('here');
+          var curSelection = new vscode.Selection( s.line, 0, (s.line + lineCounter), curEndChar);
+          editor.selection = curSelection;
+          console.log('currentText :>> ');
+          console.log(currentText);
+          
+          openTagCount = (currentText.match(/<table /g) || []).length;
+          closeTagCount = (currentText.match(/<\/table>/g) || []).length;
+          console.log('openTagCount :>> ' + openTagCount);
+          console.log('closeTagCount :>> ' + closeTagCount);
+        }
 
-
+      }
+      // overpasteSelection();
     }
  
 
-    function overpasteSelection(params) {
-      console.log('overpasteRange :>> ');
-      console.log(overpasteRange);
-      console.log('HERE');
-      // vscode.commands.executeCommand('editor.action.clipboardPasteAction');
-
-      // const clip = vscode.env.clipboard.readText();
-      // console.log('clip :>> ' + clip);
+    function overpasteSelection() {
+      console.log('overpasteSelection running'); 
       var start = editor.selection.active;
       // Paste from clipboard
       vscode.commands.executeCommand('editor.action.clipboardPasteAction').then(function () {
-
         var end = editor.selection.active; // Get position after paste
         var selection = new vscode.Selection(start.line, start.character, end.line, end.character); // Create selection
-
-
-
-
         editor.selection = selection; // Apply selection to editor
         return;
-        
+        // !VA For l
         // Format selection, when text is selected, that text is the only thing that will be formatted
         vscode.commands.executeCommand('editor.action.format').then(function () {
             // This is where I really would like the deselection to happen but it runs before
@@ -203,7 +199,6 @@ function activate(context) {
                 var newSelection = new vscode.Selection(line, character, line, character); // Create selection
                 editor.selection = newSelection; // Apply selection to editor
             }, 100);
-
         });
       });   
     }
@@ -216,6 +211,8 @@ function activate(context) {
       for (const tag of tagList) {
         if (curLine.includes( tag )) {
           curTags.push(tag);
+          console.log('curTags :>> ');
+          console.log(curTags);
         }
       }
       if ( curTags[0] === '<img ') {
@@ -225,7 +222,8 @@ function activate(context) {
         
       } else {
         // !VA The img tag is not the parent node.
-        selectParentNode( curTags );
+        selectParentNode( curTags[0] );
+        // testMe();
         console.log('IMG tag not parent');
       }
 
@@ -234,17 +232,6 @@ function activate(context) {
       console.log('ERROR: invalid tag');
       return;
     }
-
-
-
-
-
-
-
-
-    // pastePosition(curLine);
-
-
 
 
 
