@@ -171,16 +171,20 @@ function activate(context) {
       }
       var curSelection = new vscode.Selection( s.line, 0, (s.line + lineCounter), curEndChar);
       editor.selection = curSelection;
-      // overpasteSelection();
+      overpasteSelection();
     }
  
 
     function overpasteSelection() {
       console.log('overpasteSelection running'); 
       var start = editor.selection.active;
+      console.log('start :>> ');
+      console.log(start);
       // Paste from clipboard
       vscode.commands.executeCommand('editor.action.clipboardPasteAction').then(function () {
         var end = editor.selection.active; // Get position after paste
+        console.log('end :>> ');
+        console.log(end);
         var selection = new vscode.Selection(start.line, start.character, end.line, end.character); // Create selection
         editor.selection = selection; // Apply selection to editor
         return;
