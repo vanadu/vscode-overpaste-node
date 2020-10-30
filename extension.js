@@ -42,6 +42,11 @@ function activate(context) {
     const position = editor.selection.active;
     s = selection.start;
     e = selection.end;
+
+
+    var oldDocLength = editor.document.lineCount;
+    // console.log('oldDocLength :>> ' + oldDocLength);
+
     // !VA Detect cursor or selection
     // if (editor.selection.isEmpty) { 
     //   console.log('ERROR: No selection, just cursor');
@@ -66,6 +71,8 @@ function activate(context) {
         // !VA Not multiline 
       }
       curPos = s;
+      console.log('curPos :>> ');
+      console.log(curPos);
       const document = editor.document; 
       var endChar = document.lineAt(curPos).range.end.character;
       const lineStart = new vscode.Position( curPos.line, 0);
@@ -111,8 +118,6 @@ function activate(context) {
       const startPos = new vscode.Position( startLine, startChar);
       const endPos = new vscode.Position( endLine, endChar );
       curText = editor.document.getText( new vscode.Range( startPos, endPos ));
-      console.log('curText :>> ');
-      console.log(curText);
       return curText;
     }
 
@@ -123,14 +128,14 @@ function activate(context) {
       console.log('curTags :>> ');
       console.log(curTags);
       for (let i = 0; i < openTags.length; i++) {
-        console.log('openTags[i] is: ' +  openTags[i]);
+        // console.log('openTags[i] is: ' +  openTags[i]);
         if ( openTags[i].includes( curTag)) {
           openTag = openTags[i];
           closeTag = closeTags[i];
         } 
       }
-      console.log('openTag :>> ' + openTag);
-      console.log('closeTag :>> ' + closeTag);
+      // console.log('openTag :>> ' + openTag);
+      // console.log('closeTag :>> ' + closeTag);
       var curEndChar, curLineText;
       var openTagCount, closeTagCount;
       // !VA Get the current document in the active editor
@@ -145,48 +150,64 @@ function activate(context) {
         lineCounter = lineCounter + 1;
         curEndChar = document.lineAt(new vscode.Position( s.line + lineCounter, 0)).range.end.character;
         curLineText = ( '\n' + getCurText( s.line + lineCounter, 0, s.line + lineCounter, curEndChar));
-        console.log('curLineText :>> ');
-        console.log(curLineText);
-        console.log('openTag :>> ' + openTag);
-        console.log('closeTag :>> ' + closeTag);
+        // console.log('curLineText :>> ');
+        // console.log(curLineText);
+        // console.log('openTag :>> ' + openTag);
+        // console.log('closeTag :>> ' + closeTag);
 
 
-        console.log('curLineText.includes(closeTag) :>> ' + curLineText.includes(closeTag));
+        // console.log('curLineText.includes(closeTag) :>> ' + curLineText.includes(closeTag));
         if ( curLineText.includes(closeTag)) {
-          console.log('IF CLAUSE');
+          // console.log('IF CLAUSE');
           var currentText = getCurText(s.line, 0, (s.line + lineCounter), curEndChar);
-          console.log('currentText :>> ');
-          console.log(currentText);
-          console.log('here');
+          // console.log('currentText :>> ');
+          // console.log(currentText);
+          // console.log('here');
 
-          console.log('currentText :>> ');
-          console.log(currentText);
+          // console.log('currentText :>> ');
+          // console.log(currentText);
           
           openTagCount = (currentText.match(/<table /g) || []).length;
           closeTagCount = (currentText.match(/<\/table>/g) || []).length;
-          console.log('openTagCount :>> ' + openTagCount);
-          console.log('closeTagCount :>> ' + closeTagCount);
+          // console.log('openTagCount :>> ' + openTagCount);
+          // console.log('closeTagCount :>> ' + closeTagCount);
         }
 
       }
       var curSelection = new vscode.Selection( s.line, 0, (s.line + lineCounter), curEndChar);
       editor.selection = curSelection;
-      overpasteSelection();
+      var curSelectionLineCount = lineCounter + 1;
+      console.log('curSelectionLineCount :>> ' + curSelectionLineCount);
+      overpasteSelection(curSelectionLineCount);
     }
  
 
-    function overpasteSelection() {
+    function overpasteSelection(curSelectionLineCount) {
       console.log('overpasteSelection running'); 
       var start = editor.selection.active;
-      console.log('start :>> ');
-      console.log(start);
+      console.log('s.line :>> ');
+      console.log(s.line);
       // Paste from clipboard
       vscode.commands.executeCommand('editor.action.clipboardPasteAction').then(function () {
         var end = editor.selection.active; // Get position after paste
-        console.log('end :>> ');
-        console.log(end);
-        var selection = new vscode.Selection(start.line, start.character, end.line, end.character); // Create selection
-        editor.selection = selection; // Apply selection to editor
+
+
+        var newDocLength = editor.document.lineCount;
+        var docLengthDelta = newDocLength - oldDocLength;
+        var newSelectionLineCount = curSelectionLineCount + docLengthDelta;
+        var newSelectionEndLine = s.line + newSelectionLineCount;
+        console.log('newSelectionEndLine :>> ' + newSelectionEndLine);
+        const document = editor.document; 
+        var newSelectionEndChar = document.lineAt(newSelectionEndLine).range.end.character;
+        console.log('newSelectionLineCount :>> ' + newSelectionLineCount);
+        var newSelStartPos = new vscode.Position( s.line, 0);
+        var newSelEndPos = new vscode.Position( (s.line + newSelectionLineCount), newSelectionEndChar );
+        var newSelection = new vscode.Selection( newSelStartPos, newSelEndPos);
+        editor.selection = newSelection;
+
+
+        // var selection = new vscode.Selection(start.line, start.character, end.line, end.character); // Create selection
+        // editor.selection = selection; // Apply selection to editor
         return;
         // !VA For l
         // Format selection, when text is selected, that text is the only thing that will be formatted
@@ -205,7 +226,7 @@ function activate(context) {
                 editor.selection = newSelection; // Apply selection to editor
             }, 100);
         });
-      });   
+      }); 
     }
 
 
