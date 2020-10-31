@@ -23,8 +23,9 @@ function activate(context) {
     vscode.window.showInformationMessage("overpasteNode updated...")
     // !VA overPasteNode code
     // !VA --------------------------
-    let curPos, tagList, openTags, closeTags, imgTag, topLineText;
+    let endChar, curRange, curSelection, tagList, openTags, closeTags, imgTag, topLineText;
     let s, e, hasValidTag, curTags = [];
+    let startDocLineCount;
     tagList = [ '<table', '<td', '<a', '<img' ];
     openTags = [ '<table', '<td', '<a' ];
     closeTags = [ '</table>', '</td>', '</a>'] 
@@ -37,32 +38,23 @@ function activate(context) {
       return;
     }
 
-    // !VA Declare the selection and assign it. 
+    // !VA Declare the current cursor position/selection and assign it. 
     const selection = editor.selection;
+    // !VA Branch: 103120A I don't know why position is not accessed below
     const position = editor.selection.active;
     s = selection.start;
     e = selection.end;
-
-
-    var oldDocLength = editor.document.lineCount;
-    // console.log('oldDocLength :>> ' + oldDocLength);
-
-    // !VA Detect cursor or selection
-    // if (editor.selection.isEmpty) { 
-    //   console.log('ERROR: No selection, just cursor');
-    // } else {
-    //   console.log('Selection');
-    // }
+    // !VA Branch: 103120A
+    // !VA docLineCount: line count before overpasting content. Used to select the new content after overpasting.
+    startDocLineCount = editor.document.lineCount;
     
-    // !VA Get the cursor position if there is no selection and return it as
+    // !VA Get the line at the cursor/start of current selection
     function currentLine() {
+      // !VA Branch: 103120A This is where position would be accessed if it were needed
       // const position = editor.selection.active;
-      // s = selection.start;
-      // e = selection.end;
       if (!editor.selection.isEmpty) {
         // !VA Branch: 102820A
         // !VA This has no function, probably. Selection start is always the cursor position, so it doesn't matter what the user selects, it will always return the first character of the selection. This can go away, starting with isEmpty.
-
           if ( selection.start.line !== selection.end.line ) {
             console.log('ERROR: MULTILINE SELECTION');
           }
@@ -70,14 +62,13 @@ function activate(context) {
         // !VA Branch: 102820A
         // !VA Not multiline 
       }
-      curPos = s;
-      console.log('curPos :>> ');
-      console.log(curPos);
       const document = editor.document; 
-      var endChar = document.lineAt(curPos).range.end.character;
-      const lineStart = new vscode.Position( curPos.line, 0);
-      const lineEnd = new vscode.Position(curPos.line, endChar);
-      const curLine = editor.document.getText(new vscode.Range( lineStart, lineEnd ));
+      // !VA Get the end character of the line containing the cursor i.e. the first line of the current selection.
+      endChar = getEndChar( s.line );
+      // !VA Get the range from the start to the end of the current line
+      curRange = getRange( new vscode.Position( s.line, 0), new vscode.Position(s.line, endChar) )
+      // !VA Get the text of the current line and return it
+      const curLine = editor.document.getText( curRange );
       return curLine;
     }
     const curLine = currentLine();
@@ -96,20 +87,8 @@ function activate(context) {
       }
       return hasValidTag;
     }
-    
+    // !VA Bool indicating whether the current line has a valid tag
     hasValidTag = validTag(curLine);
-
-    // !VA Paste position is the first character position, leaving leading spaces, i.e. indents
-    // const overpasteStart, overpasteEnd;`
-    function selectImgNode(tag, curLine) {
-      console.log('selectImgNode running'); 
-      console.log('tag :>> ' + tag); 
-      const overpasteSelection = new vscode.Selection( 
-        new vscode.Position( s.line, 0),
-        new vscode.Position( s.line, curLine.length));
-      editor.selection = overpasteSelection;
-      return;
-    }
 
     // !VA Create a range from 4 position parameters and return the Range text.
     function getCurText(startLine, startChar, endLine, endChar) {
@@ -119,6 +98,40 @@ function activate(context) {
       const endPos = new vscode.Position( endLine, endChar );
       curText = editor.document.getText( new vscode.Range( startPos, endPos ));
       return curText;
+    }
+
+    // !VA Get the end position from the line number
+    function getEndChar(lineNumber) {
+      // console.log('getEndChar running'); 
+      let endChar;
+      endChar = editor.document.lineAt(new vscode.Position( lineNumber, 0)).range.end.character;
+      return endChar
+    }
+
+    // !VA Get a range from a start and end vscode Position object
+    function getRange(start, end) {
+      console.log('getRange running'); 
+      const r = new vscode.Range( start, end);
+      return r;
+    }
+
+    // !VA Get a selection from a start and end vscode Position object
+    function getSelection(start, end) {
+      console.log('getSelection running'); 
+      const sel = new vscode.Selection( start, end);
+      return sel;
+    }
+
+    // !VA Paste position is the very start of the line, i.e. char 0. VS Code then handles the indents properly, otherwise the first line of the pasted content would be indented, the remaining lines not.
+    // !VA Branch: 103120A
+    // !VA Review this and compare to selectParentNode re: whether the selection or range is overpasted and how the result is handled in overpasteSelection
+    function selectImgNode( curLine ) {
+      console.log('selectImgNode running'); 
+      const overpasteSelection = new vscode.Selection( 
+        new vscode.Position( s.line, 0),
+        new vscode.Position( s.line, curLine.length));
+      editor.selection = overpasteSelection;
+      return;
     }
 
     function selectParentNode( curTag ) {
@@ -148,29 +161,13 @@ function activate(context) {
 
       while ( openTagCount !== closeTagCount ) {  
         lineCounter = lineCounter + 1;
-        curEndChar = document.lineAt(new vscode.Position( s.line + lineCounter, 0)).range.end.character;
+        curEndChar = getEndChar( s.line + lineCounter);
+        // curEndChar = document.lineAt(new vscode.Position( s.line + lineCounter, 0)).range.end.character;
         curLineText = ( '\n' + getCurText( s.line + lineCounter, 0, s.line + lineCounter, curEndChar));
-        // console.log('curLineText :>> ');
-        // console.log(curLineText);
-        // console.log('openTag :>> ' + openTag);
-        // console.log('closeTag :>> ' + closeTag);
-
-
-        // console.log('curLineText.includes(closeTag) :>> ' + curLineText.includes(closeTag));
         if ( curLineText.includes(closeTag)) {
-          // console.log('IF CLAUSE');
           var currentText = getCurText(s.line, 0, (s.line + lineCounter), curEndChar);
-          // console.log('currentText :>> ');
-          // console.log(currentText);
-          // console.log('here');
-
-          // console.log('currentText :>> ');
-          // console.log(currentText);
-          
           openTagCount = (currentText.match(/<table /g) || []).length;
           closeTagCount = (currentText.match(/<\/table>/g) || []).length;
-          // console.log('openTagCount :>> ' + openTagCount);
-          // console.log('closeTagCount :>> ' + closeTagCount);
         }
 
       }
@@ -184,33 +181,16 @@ function activate(context) {
 
     function overpasteSelection(curSelectionLineCount) {
       console.log('overpasteSelection running'); 
-      var start = editor.selection.active;
-      console.log('s.line :>> ');
-      console.log(s.line);
-      // Paste from clipboard
+      // !VA Branch: 103120A Deprecate below, it's from the scavenged extension.
+      // var start = editor.selection.active;
+      // Paste from clipboard at the cursor/start of selection
       vscode.commands.executeCommand('editor.action.clipboardPasteAction').then(function () {
-        var end = editor.selection.active; // Get position after paste
-
-
-        var newDocLength = editor.document.lineCount;
-        var docLengthDelta = newDocLength - oldDocLength;
-        var newSelectionLineCount = curSelectionLineCount + docLengthDelta;
-        var newSelectionEndLine = s.line + newSelectionLineCount;
-        console.log('newSelectionEndLine :>> ' + newSelectionEndLine);
-        const document = editor.document; 
-        var newSelectionEndChar = document.lineAt(newSelectionEndLine).range.end.character;
-        console.log('newSelectionLineCount :>> ' + newSelectionLineCount);
-        var newSelStartPos = new vscode.Position( s.line, 0);
-        var newSelEndPos = new vscode.Position( (s.line + newSelectionLineCount), newSelectionEndChar );
-        var newSelection = new vscode.Selection( newSelStartPos, newSelEndPos);
-        editor.selection = newSelection;
-
-
-        // var selection = new vscode.Selection(start.line, start.character, end.line, end.character); // Create selection
-        // editor.selection = selection; // Apply selection to editor
+        // !VA The lineCount of the new selection is the lineCount of the pre-paste selection (i.e. the replaced node) plus the difference between the current document lineCount and the pre-paste lineCount.
+        var newSelectionLineCount = curSelectionLineCount + (editor.document.lineCount - startDocLineCount);
+        // !VA The post-paste selection is from the original start position to the end character of the last line of the pasted content
+        editor.selection = getSelection( new vscode.Position( s.line, 0), new vscode.Position((s.line + newSelectionLineCount), getEndChar(s.line + newSelectionLineCount)));
         return;
-        // !VA For l
-        // Format selection, when text is selected, that text is the only thing that will be formatted
+        // !VA The following was included in the scavenged extension but the extra formatting yields unexpected results
         vscode.commands.executeCommand('editor.action.format').then(function () {
             // This is where I really would like the deselection to happen but it runs before
             // formatting is done, I've tried window.onDidChangeTextEditorSelection, but that doesn't
