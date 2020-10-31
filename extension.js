@@ -18,7 +18,6 @@ function activate(context) {
 	// Now provide the implementation of the command with  registerCommand
 	// The commandId parameter must match the command field in package.json
 	let disposable = vscode.commands.registerCommand('overpasteNode.overpaste-node', function () {
-    console.log('Running overpasteNode');
     // The code you place here will be executed every time your command is executed
     vscode.window.showInformationMessage("overpasteNode updated...")
     // !VA overPasteNode code
@@ -110,14 +109,12 @@ function activate(context) {
 
     // !VA Get a range from a start and end vscode Position object
     function getRange(start, end) {
-      console.log('getRange running'); 
       const r = new vscode.Range( start, end);
       return r;
     }
 
     // !VA Get a selection from a start and end vscode Position object
     function getSelection(start, end) {
-      console.log('getSelection running'); 
       const sel = new vscode.Selection( start, end);
       return sel;
     }
@@ -125,21 +122,20 @@ function activate(context) {
     // !VA Paste position is the very start of the line, i.e. char 0. VS Code then handles the indents properly, otherwise the first line of the pasted content would be indented, the remaining lines not.
     // !VA Branch: 103120A
     // !VA Review this and compare to selectParentNode re: whether the selection or range is overpasted and how the result is handled in overpasteSelection
-    function selectImgNode( curLine ) {
+    function selectImgNode(  ) {
       console.log('selectImgNode running'); 
-      const overpasteSelection = new vscode.Selection( 
-        new vscode.Position( s.line, 0),
-        new vscode.Position( s.line, curLine.length));
-      editor.selection = overpasteSelection;
+      endChar = getEndChar( s.line );
+      editor.selection = getSelection( new vscode.Position(s.line, 0), new vscode.Position( s.line, endChar));
+      overpasteSelection(1)
       return;
     }
 
     function selectParentNode( curTag ) {
       console.log('selectParentNode running'); 
-      let startLine, startChar, endLine, endChar, openTag, closeTag;
+      let openTag, closeTag;
       // !VA openTag and closeTag are the current tag in the selected line i.e. the line containing the cursor
-      console.log('curTags :>> ');
-      console.log(curTags);
+      // console.log('curTags :>> ');
+      // console.log(curTags);
       for (let i = 0; i < openTags.length; i++) {
         // console.log('openTags[i] is: ' +  openTags[i]);
         if ( openTags[i].includes( curTag)) {
@@ -147,8 +143,8 @@ function activate(context) {
           closeTag = closeTags[i];
         } 
       }
-      // console.log('openTag :>> ' + openTag);
-      // console.log('closeTag :>> ' + closeTag);
+      console.log('openTag :>> ' + openTag);
+      console.log('closeTag :>> ' + closeTag);
       var curEndChar, curLineText;
       var openTagCount, closeTagCount;
       // !VA Get the current document in the active editor
@@ -166,15 +162,23 @@ function activate(context) {
         curLineText = ( '\n' + getCurText( s.line + lineCounter, 0, s.line + lineCounter, curEndChar));
         if ( curLineText.includes(closeTag)) {
           var currentText = getCurText(s.line, 0, (s.line + lineCounter), curEndChar);
-          openTagCount = (currentText.match(/<table /g) || []).length;
-          closeTagCount = (currentText.match(/<\/table>/g) || []).length;
+
+          var oMatch = new RegExp(openTag, 'g');
+          var cMatch = new RegExp(closeTag, 'g');
+          openTagCount = ((currentText.match(oMatch)) || []).length;
+          console.log('openTagCount :>> ' + openTagCount);
+          closeTagCount = ((currentText.match(cMatch)) || []).length;
+          console.log('closeTagCount :>> ' + closeTagCount);
+          
+          // openTagCount = (currentText.match(/<table /g) || []).length;
+          // closeTagCount = (currentText.match(/<\/table>/g) || []).length;
+          // console.log('closeTagCount :>> ' + closeTagCount);
         }
 
       }
       var curSelection = new vscode.Selection( s.line, 0, (s.line + lineCounter), curEndChar);
       editor.selection = curSelection;
       var curSelectionLineCount = lineCounter + 1;
-      console.log('curSelectionLineCount :>> ' + curSelectionLineCount);
       overpasteSelection(curSelectionLineCount);
     }
  
@@ -185,12 +189,13 @@ function activate(context) {
       // var start = editor.selection.active;
       // Paste from clipboard at the cursor/start of selection
       vscode.commands.executeCommand('editor.action.clipboardPasteAction').then(function () {
-        // !VA The lineCount of the new selection is the lineCount of the pre-paste selection (i.e. the replaced node) plus the difference between the current document lineCount and the pre-paste lineCount.
-        var newSelectionLineCount = curSelectionLineCount + (editor.document.lineCount - startDocLineCount);
+        // !VA The lineCount of the new selection is the lineCount of the pre-paste selection (i.e. the replaced node) plus the difference between the current document lineCount and the pre-paste lineCount. Add 1 to the startDocLineCount because the current line is counted twice (once in each document.lineCount call)
+        var newSelectionLineCount = curSelectionLineCount + (editor.document.lineCount - (startDocLineCount + 1));
         // !VA The post-paste selection is from the original start position to the end character of the last line of the pasted content
         editor.selection = getSelection( new vscode.Position( s.line, 0), new vscode.Position((s.line + newSelectionLineCount), getEndChar(s.line + newSelectionLineCount)));
         return;
-        // !VA The following was included in the scavenged extension but the extra formatting yields unexpected results
+        // !VA Branch: 103120A
+        // !VA The following was included in the scavenged spoeken.pasteandformat extension but the extra formatting yields unexpected results. To deprecate.
         vscode.commands.executeCommand('editor.action.format').then(function () {
             // This is where I really would like the deselection to happen but it runs before
             // formatting is done, I've tried window.onDidChangeTextEditorSelection, but that doesn't
@@ -211,20 +216,20 @@ function activate(context) {
 
 
 
-
     if (hasValidTag) {
       // !VA Get which tags are in the current line
       for (const tag of tagList) {
         if (curLine.includes( tag )) {
           curTags.push(tag);
-          console.log('curTags :>> ');
-          console.log(curTags);
+          // console.log('curTags :>> ');
+          // console.log(curTags);
         }
       }
-      if ( curTags[0] === '<img ') {
+
+      if ( curTags[0] === '<img') {
         // !VA Handle the img tag
         console.log('IMG tag is the parent node');
-        selectImgNode( curTags[0], curLine);
+        selectImgNode( );
         
       } else {
         // !VA The img tag is not the parent node.
