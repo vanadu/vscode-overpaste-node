@@ -1,6 +1,7 @@
 {
 	"name": "overpaste-node",
 	"displayName": "overpasteNode",
+	"publisher": "vanadu",
 	"description": "Swap a node and children with clipboard contents",
 	"version": "0.0.1",
 	"engines": {

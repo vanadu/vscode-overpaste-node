@@ -164,6 +164,7 @@ function activate(context) {
         // !VA The post-paste selection is from the original start position to the end character of the last line of the pasted content
         editor.selection = getSelection( new vscode.Position( s.line, 0), new vscode.Position((s.line + newSelectionLineCount), getEndChar(s.line + newSelectionLineCount)));
         vscode.window.showInformationMessage("overpasteNode: Selection overpasted!");
+        vscode.window.activeTextEditor.document.save();
         return;
         // !VA Branch: 103120A
         // !VA The following was included in the scavenged spoeken.pasteandformat extension but the extra formatting yields unexpected results. Actually, it does help with long IMG tags, adds line breaks. But we don't want that because it can interfere with the natural line breaking, i.e. the word wrap function. Leave it out for now. Users can reformat their code if they want.
