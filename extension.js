@@ -115,7 +115,6 @@ function activate(context) {
     }
 
     function selectParentNode( curTag ) {
-      console.log('selectParentNode running'); 
       let openTag, closeTag;
       // !VA openTag and closeTag are the current tag in the selected line i.e. the line containing the cursor
       // console.log('curTags :>> ');
@@ -154,7 +153,6 @@ function activate(context) {
  
 
     function overpasteSelection(curSelectionLineCount) {
-      console.log('overpasteSelection running'); 
       // !VA Branch: 103120A Deprecate below, it's from the scavenged extension.
       // var start = editor.selection.active;
       // Paste from clipboard at the cursor/start of selection

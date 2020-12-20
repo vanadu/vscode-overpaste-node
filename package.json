@@ -2,7 +2,7 @@
 	"name": "overpaste-node",
 	"displayName": "overpasteNode",
 	"publisher": "vanadu",
-	"description": "Swap a node and children with clipboard contents",
+	"description": "Swap a node and children with clipboard contents and save document",
 	"version": "0.0.1",
 	"engines": {
 		"vscode": "^1.50.0"
