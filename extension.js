@@ -54,15 +54,8 @@ function activate(context) {
     
     // !VA Get the line at the cursor/start of current selection
     function getCurLine(startPos) {
-      console.log('getCurLine startPos :>> ');
-      console.log(startPos);
-      // !VA Branch: 122020A
-      // !VA Assigning editor.document to a variable isn't necessary because we only access one document, i.e. the editor.document. The line below can be removed.
-      // const document = editor.document; 
-
       // !VA Get the end character of the line containing the cursor i.e. the first line of the current selection.
       endChar = getEndChar( startPos.line );
-      console.log(`endChar :>> ${endChar};`);
       // !VA Get the range from the start to the end of the current line
       curRange = getRange( new vscode.Position( startPos.line, 0), new vscode.Position(startPos.line, endChar) )
       // !VA Get the text of the current line and return it
@@ -71,61 +64,55 @@ function activate(context) {
     }
 
 
-    // !VA Determine if the current line is an MS conditional and if it is, return TRUE, otherwise FALSE. IMPORTANT: This needs to run AFTER lineContainsValidTag because it only handles cases where the line does contain a valid tag but that tag is in an MS conditional comment
+    // !VA Determine if the current line is an MS conditional and if it is, return TRUE, otherwise FALSE. IMPORTANT: This needs to run AFTER lineContainsValidTag because it only handles cases where the line DOES contain a valid tag but that tag is in an MS conditional comment and therefore is not a valid node for overpasteNode. 
     function isMSConditional(selStart) {
       let abort;
-      console.log('isMSConditional selStart :>> ');
-      console.log( selStart );
-      // !VA Get the current 
+      // !VA Get the current line, i.e. the line with the cursor or the start of the selection
       curLine = getCurLine(selStart);
-      console.log('isMSConditional curLine :>> ');
-      console.log(curLine);
+      // !VA If the line includes a div, test for MS conditional comments in the surrounding parent TD - if they are present then it's either a vml button or a background image
       if (curLine.includes('<div>')) {
-        console.log('curLine includes DIV');
-        if (curLine.includes('<!--[if mso]>')) {
-          console.log('VMLBT');
-          abort = true;
-        } else if (curLine.includes('<![endif]-->')) {
-          console.log('BGIMG');
-          abort = true;
-        } else {
-          console.log('NOT VMLBT or BGIMG');
-          abort = false;
+        // !VA Expand selection backwards from selStart until the first TD is reached
+        // !VA res is
+        var res, txt, txt1, txt2, i;
+        // !VA Set the counter
+        i = 0;
+        do {
+          // !VA Expend the current text range up a line until the TD is reached, and set that text to txt1
+          txt1 = getCurText( selStart.line, 0, selStart.line - i, 0);
+          res = txt1.search('<td ');
+          i++;
         }
+        while (res === -1)
+        // !VA Reset the counter and expand the current text range down a line until the closing TD tag is reached, and set that text to txt2.
+        i = 0;
+        do {
+          txt2 = getCurText( selStart.line, 0, selStart.line + i, 0);
+          res = txt2.search('</td>');
+          i++;
+        }
+        while (res === -1);
+        // !VA Concatenate the text above and below the div.
+        txt = txt1 + txt2;
+        // !VA Search the text range for MS conditional opening and closing tags. If they are found, abort - the error message is triggered in the abort handler.
+        // !VA NOTE that the bracket has to be DOUBLE escaped and the ! and hyphens single-escaped. 
+        if ( txt.search('<\!\-\-\\[if') !== -1 || txt.search('<\!\\[endif\\]\-\->') !== -1) {
+          abort = true;
+        }
+        // !VA Test for a MS conditional in the line above the current line with the TABLE tag - if it's present then the current TABLE tag is in a ghost code block
       } else if (curLine.includes('<table ')) {
-        // console.log('curLine includes TABLE ');
-        // var foo = new vscode.Position( selStart.line - 1, 0);
-        // console.log('foo :>> ');
-        // console.log(foo);
-        // curLine = getCurLine(new vscode.Position( selStart.line - 1, 0));
-        // console.log('Mark1 curLine :>> ');
-        // console.log(curLine);
-        abort = false;
+        txt = getCurText( selStart.line, 0, selStart.line - 1,  0);
+        if ( txt.search('<\!\-\-\\[if') !== -1 ) {
+          abort = true;
+        }
+      // !VA Test for a MS conditional in the line below the current line with the TD tag - if it's present then the current TD tag is in a ghost code block
       } else if (curLine.includes('<td ')) {
-        console.log('curLine includes TD ');
-        // curLine = getCurLine(new vscode.Position( selStart.line + 1, 0));
-        // console.log('Mark2 curLine :>> ');
-        // console.log(curLine);
-        abort = false;
+        txt = getCurText( selStart.line, 0, selStart.line + 2,  0);
+        if ( txt.search('<\!\\[endif\\]\-\->') !== -1 ) {
+          abort = true;
+        }
       }
-      /* !VA  
-        IF the current line contains <div> then the line MAY BE a bgimg or vmlbt, so:
-            IF the current line contains <!--[if mso]> THEN it is a vmlbt line so ABORT
-            ELSE IF the line above the current line contains <![endif]--> THEN it is a bgimg line, so ABORT
-            ELSE Continue
-        ELSE IF 
-            IF the current line contains <table and the line above it contains <!--[if THEN the current line is in a ghost tag, so ABORT
-            ELSE IF the current line contains <td and the line below it contains <![endif]--> then the current line is in a ghost tag so ABORT
-            ELSE Continue
-        ELSE
-            Continue
-      
-      */
-
       return abort;
     }
-
-
     
     // !VA If current line does not include a tag in tagList, return out
     // !VA Branch: 122020A
@@ -297,15 +284,12 @@ function activate(context) {
     hasValidTag = lineContainsValidTag(curLine);
 
     if (hasValidTag) {
-      // !VA If the selection has a valid tag, test if the tag is in an MS conditional, and if it is, return out.
+      // !VA If the selection has a valid tag, test if the tag is in an MS conditional, and if it is show the error message in the VS Code editor and return out.
       var abort = isMSConditional(selStart);
       if (abort) { 
         showErrMessage();
         return;
       }
-
-      console.log(`hasValidTag abort :>> ${abort};`);
-
 
       // !VA Add the tags in the current line to curTags. 
       for (const tag of tagList) {
