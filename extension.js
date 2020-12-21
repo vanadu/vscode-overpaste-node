@@ -8,7 +8,11 @@ const vscode = require('vscode');
 /**
  * @param {vscode.ExtensionContext} context
  */
+
+
 function activate(context) {
+
+
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
@@ -20,9 +24,13 @@ function activate(context) {
 	let disposable = vscode.commands.registerCommand('overpasteNode.overpaste-node', function () {
 
 
-    let endChar, curRange, curLine, curText, tagList, openTags, closeTags, openTagCount, closeTagCount;
-    let selStart, hasValidTag, curTags = [];
-    let startDocLineCount;
+
+
+
+    let endChar, curRange, curLine, curText, tagList, openTags, closeTags, openTagCount, closeTagCount,
+        selStart, hasValidTag, curTags = [],
+        startDocLineCount,
+        startLine, endLine;
     // !VA Branch: 122020A
     // !VA The tags supported by this extension, i.e. the tags recognized as valid nodes. img tag has no closing tag, so it is included in taglist but not openTags or closeTags. It needs to be expanded to include MS Conditionals
     tagList = [ '<table', '<td', '<div', '<a', '<img' ];
@@ -39,40 +47,95 @@ function activate(context) {
 
     // !VA Declare the current cursor position/selection and assign it. 
     const selection = editor.selection;
-    // !VA Branch: 122020A
-    // !VA The position variable isn't used, instead, a hard reference using the Position method is used whenever a position is accessed. So the line below can be removed.
-    // const position = editor.selection.active;
-    // s = selection.start;
+    // !VA Set selStart to the current cursor position/the start position of the current selection
     selStart = selection.start;
-    // !VA Branch: 122020A
-    // !VA e doesn't appear to be accessed.
-    // !VA Branch: 122020A
-    // !VA e isn't used to indicate the end of a selection because it's too generic. We need to distinguish between endChar, endLine etc. So the line below can be removed.
-    // e = selection.end;
-    // !VA docLineCount: line count before overpasting content. Used to select the new content after overpasting.
+    // !VA startDocLineCount: line count before overpasting content. The line count before overpasting is used to select the new content after it has overpasted the existing selection.
     startDocLineCount = editor.document.lineCount;
     
     // !VA Get the line at the cursor/start of current selection
-    function getCurLine() {
+    function getCurLine(startPos) {
+      console.log('getCurLine startPos :>> ');
+      console.log(startPos);
       // !VA Branch: 122020A
       // !VA Assigning editor.document to a variable isn't necessary because we only access one document, i.e. the editor.document. The line below can be removed.
       // const document = editor.document; 
 
       // !VA Get the end character of the line containing the cursor i.e. the first line of the current selection.
-      endChar = getEndChar( selStart.line );
+      endChar = getEndChar( startPos.line );
+      console.log(`endChar :>> ${endChar};`);
       // !VA Get the range from the start to the end of the current line
-      curRange = getRange( new vscode.Position( selStart.line, 0), new vscode.Position(selStart.line, endChar) )
+      curRange = getRange( new vscode.Position( startPos.line, 0), new vscode.Position(startPos.line, endChar) )
       // !VA Get the text of the current line and return it
       curLine = editor.document.getText( curRange );
       return curLine;
     }
-    curLine = getCurLine();
+
+
+    // !VA Determine if the current line is an MS conditional and if it is, return TRUE, otherwise FALSE. IMPORTANT: This needs to run AFTER lineContainsValidTag because it only handles cases where the line does contain a valid tag but that tag is in an MS conditional comment
+    function isMSConditional(selStart) {
+      let abort;
+      console.log('isMSConditional selStart :>> ');
+      console.log( selStart );
+      // !VA Get the current 
+      curLine = getCurLine(selStart);
+      console.log('isMSConditional curLine :>> ');
+      console.log(curLine);
+      if (curLine.includes('<div>')) {
+        console.log('curLine includes DIV');
+        if (curLine.includes('<!--[if mso]>')) {
+          console.log('VMLBT');
+          abort = true;
+        } else if (curLine.includes('<![endif]-->')) {
+          console.log('BGIMG');
+          abort = true;
+        } else {
+          console.log('NOT VMLBT or BGIMG');
+          abort = false;
+        }
+      } else if (curLine.includes('<table ')) {
+        // console.log('curLine includes TABLE ');
+        // var foo = new vscode.Position( selStart.line - 1, 0);
+        // console.log('foo :>> ');
+        // console.log(foo);
+        // curLine = getCurLine(new vscode.Position( selStart.line - 1, 0));
+        // console.log('Mark1 curLine :>> ');
+        // console.log(curLine);
+        abort = false;
+      } else if (curLine.includes('<td ')) {
+        console.log('curLine includes TD ');
+        // curLine = getCurLine(new vscode.Position( selStart.line + 1, 0));
+        // console.log('Mark2 curLine :>> ');
+        // console.log(curLine);
+        abort = false;
+      }
+      /* !VA  
+        IF the current line contains <div> then the line MAY BE a bgimg or vmlbt, so:
+            IF the current line contains <!--[if mso]> THEN it is a vmlbt line so ABORT
+            ELSE IF the line above the current line contains <![endif]--> THEN it is a bgimg line, so ABORT
+            ELSE Continue
+        ELSE IF 
+            IF the current line contains <table and the line above it contains <!--[if THEN the current line is in a ghost tag, so ABORT
+            ELSE IF the current line contains <td and the line below it contains <![endif]--> then the current line is in a ghost tag so ABORT
+            ELSE Continue
+        ELSE
+            Continue
+      
+      */
+
+      return abort;
+    }
+
+
     
     // !VA If current line does not include a tag in tagList, return out
     // !VA Branch: 122020A
     // !VA This needs to include MS Conditionals.
-    function validTag(curLine) {
+    function lineContainsValidTag(curLine) {
       // !VA Test if the current line 
+      // console.log('lineContainsValidTag curLine :>> ');
+      // console.log(curLine);
+
+
       for (const tag of tagList) {
         if (curLine.includes(tag)) {
           hasValidTag = true;
@@ -84,8 +147,7 @@ function activate(context) {
       }
       return hasValidTag;
     }
-    // !VA Bool indicating whether the current line has a valid tag
-    hasValidTag = validTag(curLine);
+
 
     // !VA Create a range from 4 position parameters and return the Range text.
     function getCurText(startLine, startChar, endLine, endChar) {
@@ -129,8 +191,8 @@ function activate(context) {
 
 
     // !VA Branch: 122020A
-    // !VA This appears to be poor nomenclature. This doesn't select anything, all it does is identify which tags are contained in the current line.
-    // !VA Parses the current line for any tags that are in the list of supported open tags (openTags). If a tag is in the list, the tag is placed in the openTag/closeTag variable. This defines line with openTag as the target of the current overpasteNode operation.
+
+    // !VA Parses the current line for any tags that are in the list of supported open tags (openTags). If a tag is in the list, the tag is placed in the openTag/closeTag variable. This defines line with openTag as the target of the current overpasteNode operation. Then runs a loop to extend the selection as long as the number of opening tags in the selection does not equal the number of closing tags the selection. Then, overpastes the selection with the clipboard contents.
     function selectParentNode( curTag ) {
       let openTag, closeTag;
       for (let i = 0; i < openTags.length; i++) {
@@ -164,31 +226,36 @@ function activate(context) {
       }
       // !VA Branch: 122020A
       // !VA This is where we have to expand the selection to include the ghost tags above and below the current selection. overpasteNode appears to already handle the child ghost tags properly, i.e. overpastes them with the selection. 
-      console.log(`selStart.line - 1 :>> ${selStart.line - 1};`);
-      console.log(`getEndChar( selStart.line - 1 ) :>> ${getEndChar( selStart.line - 1 )};`);
-      var testText = getCurText(selStart.line - 1, 0, (selStart.line - 1), getEndChar( selStart.line - 1 ));
-      var startLine, endLine;
-      if ( testText.includes('<![endif]-->')) { 
-        console.log('HIT');
+      // console.log(`selStart.line - 1 :>> ${selStart.line - 1};`);
+      // console.log(`getEndChar( selStart.line - 1 ) :>> ${getEndChar( selStart.line - 1 )};`);
+      // !VA Set curTest, i.e. the text line to test for MS Conditional tags, to the line above the current line.
+      curText = getCurText(selStart.line - 1, 0, (selStart.line - 1), getEndChar( selStart.line - 1 ));
+      // !VA If curText includes the MS conditional closing tag, then the selection is enclosed in ghost tags, so expand the selection by five lines above and below the current line (i.e. selStart, which is either the line containing the cursor or the start of the current selection).
+      if ( curText.includes('<![endif]-->')) { 
+        // console.log('HIT');
         startLine = selStart.line - 5;
         endLine = selStart.line + lineCounter + 5; 
+        // console.log(`HIT startLine :>> ${startLine};`);
+        // console.log(`HIT endLine :>> ${endLine};`);
       } else {
+        // console.log('NO HIT');
         startLine = selStart.line;
-        endLine = selStart.line + lineCounter + 5; 
+        endLine = selStart.line + lineCounter; 
+        // console.log(`NO HIT startLine :>> ${startLine};`);
+        // console.log(`NO HIT endLine :>> ${endLine};`);
       }
-      console.log(`startLine :>> ${startLine};`);
-      console.log(`endLine :>> ${endLine};`);
+
 
 
       var curSelection = new vscode.Selection( startLine, 0, (endLine), getEndChar(endLine));
-      console.log('curSelection :>> ');
-      console.log(curSelection);
+      // console.log('curSelection :>> ');
+      // console.log(curSelection);
       editor.selection = curSelection;
       var curSelectionLineCount = lineCounter + 1;
       overpasteSelection(curSelectionLineCount);
     }
  
-
+    // !VA Replaces the current selection with the contents of the clipboard.
     function overpasteSelection(curSelectionLineCount) {
       // !VA Branch: 103120A Deprecate below, it's from the scavenged extension.
       // var start = editor.selection.active;
@@ -220,9 +287,26 @@ function activate(context) {
       }); 
     }
 
+    function showErrMessage() {
+      vscode.window.showInformationMessage("overpasteNode: Line contains no valid/supported nodeName")
+    }
 
+    // !VA Get the current line, i.e. the line with the cursor or the start line of the selection
+    curLine = getCurLine(selStart);
+    // !VA Bool indicating whether the current line has a valid tag, true if valid, false if invalid
+    hasValidTag = lineContainsValidTag(curLine);
 
     if (hasValidTag) {
+      // !VA If the selection has a valid tag, test if the tag is in an MS conditional, and if it is, return out.
+      var abort = isMSConditional(selStart);
+      if (abort) { 
+        showErrMessage();
+        return;
+      }
+
+      console.log(`hasValidTag abort :>> ${abort};`);
+
+
       // !VA Add the tags in the current line to curTags. 
       for (const tag of tagList) {
         if (curLine.includes( tag )) {
@@ -239,13 +323,13 @@ function activate(context) {
       }
     } else {
       // !VA If the selection is in an empty line or the line only contains whitespace, overpaste it. Otherwise, the text on the current line contains none of the tags in tagList, so write an error in an Information Message.
-      curLine = getCurLine();
+      curLine = getCurLine(selStart);
       var regex = /^\s*$/;
       if ( curLine.match(regex) ) {
         overpasteSelection(1);
       } else {
         console.log('ERROR: invalid tag');
-        vscode.window.showInformationMessage("overpasteNode: Line contains no valid/supported nodeName")
+        showErrMessage();
         return;
       }
     }
