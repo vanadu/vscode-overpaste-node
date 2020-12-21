@@ -18,9 +18,13 @@ function activate(context) {
 	// Now provide the implementation of the command with  registerCommand
 	// The commandId parameter must match the command field in package.json
 	let disposable = vscode.commands.registerCommand('overpasteNode.overpaste-node', function () {
+
+
     let endChar, curRange, curLine, curText, tagList, openTags, closeTags, openTagCount, closeTagCount;
-    let s, e, hasValidTag, curTags = [];
+    let selStart, hasValidTag, curTags = [];
     let startDocLineCount;
+    // !VA Branch: 122020A
+    // !VA The tags supported by this extension, i.e. the tags recognized as valid nodes. img tag has no closing tag, so it is included in taglist but not openTags or closeTags. It needs to be expanded to include MS Conditionals
     tagList = [ '<table', '<td', '<div', '<a', '<img' ];
     openTags = [ '<table', '<td', '<div', '<a' ];
     closeTags = [ '</table>', '</td>', '</div>', '</a>'] 
@@ -35,21 +39,29 @@ function activate(context) {
 
     // !VA Declare the current cursor position/selection and assign it. 
     const selection = editor.selection;
-    // !VA Branch: 103120A I don't know why position is not accessed below
-    const position = editor.selection.active;
-    s = selection.start;
-    e = selection.end;
-    // !VA Branch: 103120A
+    // !VA Branch: 122020A
+    // !VA The position variable isn't used, instead, a hard reference using the Position method is used whenever a position is accessed. So the line below can be removed.
+    // const position = editor.selection.active;
+    // s = selection.start;
+    selStart = selection.start;
+    // !VA Branch: 122020A
+    // !VA e doesn't appear to be accessed.
+    // !VA Branch: 122020A
+    // !VA e isn't used to indicate the end of a selection because it's too generic. We need to distinguish between endChar, endLine etc. So the line below can be removed.
+    // e = selection.end;
     // !VA docLineCount: line count before overpasting content. Used to select the new content after overpasting.
     startDocLineCount = editor.document.lineCount;
     
     // !VA Get the line at the cursor/start of current selection
     function getCurLine() {
-      const document = editor.document; 
+      // !VA Branch: 122020A
+      // !VA Assigning editor.document to a variable isn't necessary because we only access one document, i.e. the editor.document. The line below can be removed.
+      // const document = editor.document; 
+
       // !VA Get the end character of the line containing the cursor i.e. the first line of the current selection.
-      endChar = getEndChar( s.line );
+      endChar = getEndChar( selStart.line );
       // !VA Get the range from the start to the end of the current line
-      curRange = getRange( new vscode.Position( s.line, 0), new vscode.Position(s.line, endChar) )
+      curRange = getRange( new vscode.Position( selStart.line, 0), new vscode.Position(selStart.line, endChar) )
       // !VA Get the text of the current line and return it
       curLine = editor.document.getText( curRange );
       return curLine;
@@ -57,6 +69,8 @@ function activate(context) {
     curLine = getCurLine();
     
     // !VA If current line does not include a tag in tagList, return out
+    // !VA Branch: 122020A
+    // !VA This needs to include MS Conditionals.
     function validTag(curLine) {
       // !VA Test if the current line 
       for (const tag of tagList) {
@@ -104,48 +118,71 @@ function activate(context) {
     }
 
     // !VA Paste position is the very start of the line, i.e. char 0. VS Code then handles the indents properly, otherwise the first line of the pasted content would be indented, the remaining lines not.
-    // !VA Branch: 103120A
-    // !VA Review this and compare to selectParentNode re: whether the selection or range is overpasted and how the result is handled in overpasteSelection
+    // !VA Selects a line from the first char of the line to the endChar of the line. This selection will only be used for the imgNode because it's the only single-line node. Every other selection spans a parent node and its child nodes, hence the function name 'selectImgNode'
     function selectImgNode(  ) {
       console.log('selectImgNode running'); 
-      endChar = getEndChar( s.line );
-      editor.selection = getSelection( new vscode.Position(s.line, 0), new vscode.Position( s.line, endChar));
+      endChar = getEndChar( selStart.line );
+      editor.selection = getSelection( new vscode.Position(selStart.line, 0), new vscode.Position( selStart.line, endChar));
       overpasteSelection(1)
       return;
     }
 
+
+    // !VA Branch: 122020A
+    // !VA This appears to be poor nomenclature. This doesn't select anything, all it does is identify which tags are contained in the current line.
+    // !VA Parses the current line for any tags that are in the list of supported open tags (openTags). If a tag is in the list, the tag is placed in the openTag/closeTag variable. This defines line with openTag as the target of the current overpasteNode operation.
     function selectParentNode( curTag ) {
       let openTag, closeTag;
-      // !VA openTag and closeTag are the current tag in the selected line i.e. the line containing the cursor
-      // console.log('curTags :>> ');
-      // console.log(curTags);
       for (let i = 0; i < openTags.length; i++) {
         // console.log('openTags[i] is: ' +  openTags[i]);
         if ( openTags[i].includes( curTag)) {
+          // !VA Branch: 122020A
+          // !VA Here we need to determine whether the line is a ghost tag or other MS conditional 
           openTag = openTags[i];
           closeTag = closeTags[i];
         } 
       }
 
       // !VA Get the current document in the active editor
-      const document = editor.document; 
-      // !VA Counter to increment line number s.line where s.line is the line containing the cursor, i.e. the first position of the current user selection.
+      // !VA Branch: 122020A
+      // !VA Again, assigning editor.document to a variable isn't necessary because we only access one document, i.e. the editor.document. The line below can be removed.
+      // const document = editor.document; 
+      // !VA Counter to increment line number selStart.line where selStart.line is the line containing the cursor, i.e. the first position of the current user selection.
       var lineCounter = -1;
       // !VA Start with the line containing the cursor as the current range. At this point there is only one opening tag in the current range and no closing tags so start the loop accordingly.
       openTagCount = 1, closeTagCount = 0;
       // !VA Run the loop as long as the number of openTags does not equal the number of closeTags. 
       while ( openTagCount !== closeTagCount ) {  
         lineCounter = lineCounter + 1;
-        endChar = getEndChar( s.line + lineCounter);
-        curLine = ( '\n' + getCurText( s.line + lineCounter, 0, s.line + lineCounter, endChar));
+        endChar = getEndChar( selStart.line + lineCounter);
+        curLine = ( '\n' + getCurText( selStart.line + lineCounter, 0, selStart.line + lineCounter, endChar));
         if ( curLine.includes(closeTag)) {
-          curText = getCurText(s.line, 0, (s.line + lineCounter), endChar);
+          curText = getCurText(selStart.line, 0, (selStart.line + lineCounter), endChar);
           openTagCount = ((curText.match(new RegExp(openTag, 'g'))) || []).length;
           closeTagCount = ((curText.match(new RegExp(closeTag, 'g'))) || []).length;
         }
-
       }
-      var curSelection = new vscode.Selection( s.line, 0, (s.line + lineCounter), endChar);
+      // !VA Branch: 122020A
+      // !VA This is where we have to expand the selection to include the ghost tags above and below the current selection. overpasteNode appears to already handle the child ghost tags properly, i.e. overpastes them with the selection. 
+      console.log(`selStart.line - 1 :>> ${selStart.line - 1};`);
+      console.log(`getEndChar( selStart.line - 1 ) :>> ${getEndChar( selStart.line - 1 )};`);
+      var testText = getCurText(selStart.line - 1, 0, (selStart.line - 1), getEndChar( selStart.line - 1 ));
+      var startLine, endLine;
+      if ( testText.includes('<![endif]-->')) { 
+        console.log('HIT');
+        startLine = selStart.line - 5;
+        endLine = selStart.line + lineCounter + 5; 
+      } else {
+        startLine = selStart.line;
+        endLine = selStart.line + lineCounter + 5; 
+      }
+      console.log(`startLine :>> ${startLine};`);
+      console.log(`endLine :>> ${endLine};`);
+
+
+      var curSelection = new vscode.Selection( startLine, 0, (endLine), getEndChar(endLine));
+      console.log('curSelection :>> ');
+      console.log(curSelection);
       editor.selection = curSelection;
       var curSelectionLineCount = lineCounter + 1;
       overpasteSelection(curSelectionLineCount);
@@ -160,7 +197,7 @@ function activate(context) {
         // !VA The lineCount of the new selection is the lineCount of the pre-paste selection (i.e. the replaced node) plus the difference between the current document lineCount and the pre-paste lineCount. Add 1 to the startDocLineCount because the current line is counted twice (once in each document.lineCount call)
         var newSelectionLineCount = curSelectionLineCount + (editor.document.lineCount - (startDocLineCount + 1));
         // !VA The post-paste selection is from the original start position to the end character of the last line of the pasted content
-        editor.selection = getSelection( new vscode.Position( s.line, 0), new vscode.Position((s.line + newSelectionLineCount), getEndChar(s.line + newSelectionLineCount)));
+        editor.selection = getSelection( new vscode.Position( selStart.line, 0), new vscode.Position((selStart.line + newSelectionLineCount), getEndChar(selStart.line + newSelectionLineCount)));
         vscode.window.showInformationMessage("overpasteNode: Selection overpasted!");
         vscode.window.activeTextEditor.document.save();
         return;
@@ -182,6 +219,8 @@ function activate(context) {
         });
       }); 
     }
+
+
 
     if (hasValidTag) {
       // !VA Add the tags in the current line to curTags. 

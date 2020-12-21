@@ -1,0 +1,266 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+  <title>Fixed Responsive Email</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge"> <!-- Cerberus: Use the latest (edge) version of IE rendering engine -->
+  <meta name="x-apple-disable-message-reformatting">  <!-- Cerberus: Disable auto-scale in iOS 10 Mail entirely -->
+  <meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no"> <!-- Cerberus: Tell iOS not to automatically link certain text strings. -->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,700,900&display=swap" rel="stylesheet"><!-- VA! Use Roboto -->
+  <title></title> <!-- Cerbrerus: The title tag shows in email notifications, like Android 4.4. -->
+  <!-- VA! Below is needed to ensure PNGs don't scale at 120dpi display in Outlook on Windows -->
+  <!--[if gte mso 7]><xml>
+  <o:OfficeDocumentSettings>
+    <o:AllowPNG/>
+    <o:PixelsPerInch>96</o:PixelsPerInch>
+  </o:OfficeDocumentSettings>
+  </xml><![endif]-->
+  <!-- VA! The below is required to ensure Outlook falls back to the proper font instead of defaulting to Times Roman. Include class="fallback-font" in wherever you use a web font -->
+  <!--[if mso]>
+  <style type=”text/css”>
+  .fallback-font {
+  font-family: Arial, sans-serif;
+  }
+  </style>
+  <![endif]-->
+
+  <style type="text/css">
+
+    body {
+      margin: 0px;
+      padding: 0px;
+      background-color: #ffffff !important;
+    }
+    strong {
+      font-weight: bold !important;
+    }
+    em {
+      font-style: italic !important;
+    }
+    td {
+      -webkit-text-size-adjust:none;
+      mso-line-height-rule: exactly;
+    }
+    a[href^=tel] {
+      color: inherit;
+      text-decoration: none;
+    }
+    .nolinkcolor a {
+      color:#425563 !important;
+      text-decoration: none !important;
+    }
+    table, td {
+      border-collapse:collapse !important;
+      mso-table-lspace:0pt !important;
+      mso-table-rspace:0pt !important;
+    }
+
+
+    /* Start of Synthroid Email Styles */
+    @media screen and (max-width: 600px) {
+      *.full {
+        width:100% !important;
+      }
+      *.fullgmail {
+        width: 100% !important;
+        min-width:100% !important;
+      }
+
+      *.logo {
+        width:260px !important;
+        height:auto !important;
+      }
+      *.mobileshow {
+        display:block !important;
+        width: auto !important;
+        overflow: visible !important;
+        float: none !important;
+        max-height: none !important;
+        line-height: normal !important;
+      }
+      *.tbloutlook1 {
+        width:100% !important;
+      }
+      *.tbloutlook2 {
+        width:100% !important;
+      }
+      *.hide {
+        display: none !important;
+      }
+      *.show {
+        display: block !important;
+      }
+      *.imgresize1 {
+        width:100% !important;
+        height:auto !important;
+      }
+      *.imgresize3 {
+        width:100% !important;
+        height:auto !important;
+      }
+
+    }
+    /* End of Synthroid Email Styles */
+
+    /* SDEmail Styles */
+    .devred {border: 1px solid red !important}
+    .devblu {border: 1px solid blue !important; }
+    .devmag {border: 1px solid magenta !important; }
+    span.pop-red {
+      color: #D24152;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+    span.pop-blue {
+      color: #314F6E;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+
+
+    /* Client-specific Styles */
+    #outlook a {padding:0;} /* Force Outlook to provide a "view in browser" menu link. */
+    body{width:100% !important; -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; margin:0; padding:0;}
+    /* Prevent Webkit and Windows Mobile platforms from changing default font sizes, while not breaking desktop design. */
+    .ExternalClass {width:100%;} /* Force Hotmail to display emails at full width */
+    .ExternalClass, .ExternalClass p, .ExternalClass span, .ExternalClass font, .ExternalClass td, .ExternalClass div {line-height: 100%;} /* Force Hotmail to display normal line spacing. */
+    #backgroundTable {margin:0; padding:0; width:100% !important; line-height: 100% !important;}
+    img {outline:none; text-decoration:none;border:none; -ms-interpolation-mode: bicubic;}
+    a img {border:none;}
+    .image_fix {display:block;}
+    p {margin: 0px 0px !important;}
+    table td {border-collapse: collapse;}
+    table { border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt; }
+    a {color: #33b9ff;text-decoration: none;}
+    /*STYLES*/
+    table.full { width: 100%; clear: both; }
+
+    /* .gutterleft, .gutterright { border: 1px solid red !important;} */
+
+    /*DEV STYLES*/
+    .dvgrn {border: 1px solid green }
+    .dvred {border: 1px solid red}
+    .dvblu {border: 1px solid blue }
+
+
+    h1 { font-family: Arial, Helvetica, sans-serif; font-size: 42px; font-weight: bold; color: #3f3f3f; text-transform: uppercase; padding: 10px 0; margin: 0; }
+    h2 { font-family: Arial, Helvetica, sans-serif; font-size: 36px; font-weight: bold; color: #C33D44; }
+    table.seethru { width: 80% !important; align: center !important; opacity: .8}
+
+    /* Large Phone STYLES*/
+    @media only screen and (max-width: 599px) {
+
+      a[href^="tel"], a[href^="sms"] { color: #0a8cce; /* or whatever your want */ pointer-events: none; cursor: default; }
+
+      .mobile_link a[href^="tel"], .mobile_link a[href^="sms"] { text-decoration: default; color: #0a8cce !important; pointer-events: auto; cursor: default; }
+
+      /* ----- Template -------*/
+
+      /* VA! Default device container width */
+      .devicewidth { width: 412px !important;}
+      .devicewidthinner { width: 392px !important;}
+
+
+      /* What it does: Forces table cells into full-width rows. */
+      .stack-column-center {
+        display: block !important;
+        width: 412px !important;
+        max-width: 100% !important;
+        direction: ltr !important;
+      }
+
+      /* lph - Large Phone Styles */ 
+      img.stars { width: 412px !important; height: 21px !important; }
+      .mobileshow {
+        width: 412px !important;
+        height: auto !important;
+      }
+
+    }
+
+    /* Small Phone STYLES*/
+    @media only screen and (max-width: 411px) {
+      a[href^="tel"], a[href^="sms"] {
+        text-decoration: none;
+        color: #0a8cce; /* or whatever your want */
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .mobile_link a[href^="tel"], .mobile_link a[href^="sms"] {
+        text-decoration: default;
+        color: #0a8cce !important;
+        pointer-events: auto;
+        cursor: default;
+      }
+
+      /* ----- Template -------*/
+
+      /* VA! General styling */
+      .devicewidth { width: 318px !important; }
+      .devicewidthinner { width: 298px !important }
+
+        /* What it does: Forces table cells into full-width rows. */
+        .stack-column-center {
+        display: block !important;
+        width: 318px !important;
+        max-width: 100% !important;
+        direction: ltr !important;
+      }
+
+      /* VA! sph Small Phone Styles */ 
+      img.stars { width: 318px !important; height: 16px !important; }
+      .mobileshow {
+        width: 318px !important;
+        height: auto !important;
+      }
+
+    }
+  </style>
+</head>
+
+<body>
+
+  <table class="fullgmail" width="100%" bgcolor="#FFFFFF" role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="border: 0; min-width: 600px;">
+    <tr>
+      <td align="center" valign="top" style="width: 600px;">
+        
+        <!-- CONTENT WRAPPER -->
+        <table width="600" class="devicewidth" align="center" bgcolor="#FFFFFF" border="0" role="presentation" cellpadding="0" cellspacing="0" style="width: 600px;">
+          <tr>
+            <td align="center" valign="top" style="border-left: 1px solid #959595; border-right: 1px solid #959595; width: 600px;">
+
+
+              <!-- HEADER WRAPPER-->
+
+<!--[if (gte mso 9)|(IE)]>
+<table align="center" border="0" cellspacing="0" cellpadding="0" width="650">
+<tr>
+<td align="center" valign="top" width="650">
+<![endif]-->
+<table style="true" role="presentation" width="650" cellspacing="0" cellpadding="0" border="0" align="center">
+  <tr>
+    <td width="650" valign="top" height="257" bgcolor="#7bceeb" background="img/bo-ben.png">
+      <!--[if gte mso 9]>
+      <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:650px;height:257px;">
+      <v:fill type="tile" src="img/bo-ben.png" color="#7bceeb" />
+      <v:textbox inset="0,0,0,0">
+      <![endif]-->
+      <div>
+      <!-- Put Foreground Content Here -->
+      </div>
+      <!--[if gte mso 9]>
+        </v:textbox>
+      </v:rect>
+      <![endif]-->
+    </td>
+  </tr>
+</table>
+<!--[if (gte mso 9)|(IE)]>
+</td>
+</tr>
+</table>
+<![endif]-->
+
+</html>
